@@ -9,11 +9,12 @@
 
 int clnt_number = 0;
 int clnt_socks[20]; //클라이언트가 해당 소켓을 저장하기 위한 배열
+int serv_sock, clnt_sock;
+struct sockaddr_in clnt_addr;
+int clnt_addr_size;
 
 int tcp_server_open(void) {
-    int serv_sock, clnt_sock;
-    struct sockaddr_in clnt_addr;
-    int clnt_addr_size;
+    
     struct sockaddr_in serv_addr =
     {
      .sin_family = AF_INET,
@@ -32,9 +33,6 @@ int tcp_server_open(void) {
     // 3. listen
     if (listen(serv_sock, 5) < 0) return -3;
     
-    clnt_addr_size = sizeof(clnt_addr);
-    clnt_sock = accept(serv_sock, (struct sockaddr*)&clnt_addr, &clnt_addr_size); //연결수락
-    printf("accept 성공\n");
     return clnt_sock;
 }
 
@@ -44,6 +42,7 @@ int tcp_server_worker(int fd, char *buf)
     int i = 0;
     char* arg[4] = { "", "", "" };
     char send_buf[2048] = "";
+    char ls_result[2048] = "";
 
     // 1. 아규먼트 토큰 분리( 여기는 \n )
     for (char* p = strtok(buf, "\n"); p; p = strtok(NULL, "\n")) {
@@ -53,36 +52,28 @@ int tcp_server_worker(int fd, char *buf)
     // 2. 아규먼트 별 명령 실행
     if (strcmp(arg[0], "list") == 0) {
         printf("list 명령 실행\n");
-        char ls_result[2048] = "";
+        //char ls_result[2048] = "";
         char flist[128][128] = { 0, };
-        FILE* fp = popen("ls -lt board", "r");
+        FILE* fp = popen("ls -1t board", "r");
         int idx = 0;
 
         // 파일 목록 얻어오기
         fgets(ls_result, sizeof ls_result, fp);
-        printf("목록 가져옴\n");
+       // printf("%s\n",ls_result);
         for (char* p = strtok(ls_result, "\n\r"); p; p = strtok(NULL, "\n\r")) {
             strcpy(flist[idx++], p);
         }
-        printf("목록 배열에 복사\n");
         pclose(fp);
         // 파일 내용 얻어오기
         for (int j = 0; j < idx; j++) {
-            printf("목록 이용해서 파일 접속\n");
             char fname[256], tmp[256], title[256];
             sprintf(fname, "board/%s", flist[j]);
-            printf("목록 이용해서 파일 접속2\n");
             fp = fopen(fname, "r");
-            printf("목록 이용해서 파일 접속3\n");
             fscanf(fp, "%[^\n]", title);
-            printf("목록 이용해서 파일 접속4\n");
             fclose(fp);
-            printf("목록 이용해서 파일 접속5\n");
 
             sprintf(tmp, "%2d %s\n", j + 1, title);
-            printf("목록 이용해서 파일 접속6\n");
             strcat(send_buf, tmp);
-            printf("목록 이용해서 파일 접속7\n");
         }
     }
     else if (strcmp(arg[0], "write") == 0) {
@@ -114,9 +105,8 @@ int tcp_server_worker(int fd, char *buf)
     }
     // 3. 전송
     //return sendto(fd, send_buf, strlen(send_buf), 0, (struct sockaddr*)paddr, sizeof(*paddr));
-    printf("보내기 직전\n");
+    printf("%s\n", ls_result);
     return write(fd, send_buf, strlen(send_buf));
-    printf("보내기\n");
 }
 
 int main(void) {
@@ -130,6 +120,9 @@ int main(void) {
     case -2: printf("바인드 실패\n"); return 1;
     case -3: printf("listen 실패\n"); return 1;
     }
+    clnt_addr_size = sizeof(clnt_addr);
+    clnt_sock = accept(serv_sock, (struct sockaddr*)&clnt_addr, &clnt_addr_size); //연결수락
+    printf("accept 성공\n");
 
     while (1) {
         // 2. 메세지 수신
@@ -139,8 +132,9 @@ int main(void) {
         if (recv_len < 0) continue;
         buf[recv_len] = '\0';
         printf(buf);
-
         // 3. 명령 처리
         tcp_server_worker(serv_sock,  buf);
+        
+        close(serv_sock);
     }
 }
