@@ -7,8 +7,6 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-int clnt_number = 0;
-int clnt_socks[20]; //클라이언트가 해당 소켓을 저장하기 위한 배열
 int serv_sock, clnt_sock;
 struct sockaddr_in clnt_addr;
 int clnt_addr_size;
@@ -32,12 +30,15 @@ int tcp_server_open(void) {
 
     // 3. listen
     if (listen(serv_sock, 5) < 0) return -3;
+
     
-    return clnt_sock;
+    return serv_sock;
 }
 
 int tcp_server_worker(int fd, char *buf) 
 {
+    
+
     printf("worker start\n");
     int i = 0;
     char* arg[4] = { "", "", "" };
@@ -58,7 +59,7 @@ int tcp_server_worker(int fd, char *buf)
         int idx = 0;
 
         // 파일 목록 얻어오기
-        fgets(ls_result, sizeof ls_result, fp);
+        fread(ls_result, sizeof ls_result, 1, fp);
        // printf("%s\n",ls_result);
         for (char* p = strtok(ls_result, "\n\r"); p; p = strtok(NULL, "\n\r")) {
             strcpy(flist[idx++], p);
@@ -106,7 +107,8 @@ int tcp_server_worker(int fd, char *buf)
     // 3. 전송
     //return sendto(fd, send_buf, strlen(send_buf), 0, (struct sockaddr*)paddr, sizeof(*paddr));
     printf("%s\n", ls_result);
-    return write(fd, send_buf, strlen(send_buf));
+    write(fd, send_buf, strlen(send_buf));
+    close(fd);
 }
 
 int main(void) {
@@ -120,21 +122,17 @@ int main(void) {
     case -2: printf("바인드 실패\n"); return 1;
     case -3: printf("listen 실패\n"); return 1;
     }
-    clnt_addr_size = sizeof(clnt_addr);
-    clnt_sock = accept(serv_sock, (struct sockaddr*)&clnt_addr, &clnt_addr_size); //연결수락
-    printf("accept 성공\n");
 
     while (1) {
         // 2. 메세지 수신
-        //addr_len = sizeof client_addr;
-        //recv_len = recvfrom(serv_sock, buf, sizeof buf, 0, (struct sockaddr*)&client_addr, &addr_len);
-        recv_len = read(serv_sock, buf, sizeof buf);
+        clnt_addr_size = sizeof(clnt_addr);
+        clnt_sock = accept(serv_sock, (struct sockaddr*)&clnt_addr, &clnt_addr_size); //연결수락
+        printf("accept 성공\n");
+        recv_len = read(clnt_sock, buf, sizeof buf);
         if (recv_len < 0) continue;
         buf[recv_len] = '\0';
         printf(buf);
         // 3. 명령 처리
-        tcp_server_worker(serv_sock,  buf);
-        
-        close(serv_sock);
+        tcp_server_worker(clnt_sock,  buf);
     }
 }

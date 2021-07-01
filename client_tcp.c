@@ -24,6 +24,7 @@ void send_cmd(const char *cmd)
     write(fd, cmd, strlen(cmd));
     recv_len = read(fd, buf, sizeof buf);
     printf("%s\n", buf);
+    close(fd);
 }
 
 int main(int argc, char *argv[])
