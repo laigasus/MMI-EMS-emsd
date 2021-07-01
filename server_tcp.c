@@ -1,0 +1,146 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
+int clnt_number = 0;
+int clnt_socks[20]; //클라이언트가 해당 소켓을 저장하기 위한 배열
+
+int tcp_server_open(void) {
+    int serv_sock, clnt_sock;
+    struct sockaddr_in clnt_addr;
+    int clnt_addr_size;
+    struct sockaddr_in serv_addr =
+    {
+     .sin_family = AF_INET,
+     .sin_addr.s_addr = htonl(INADDR_ANY),
+     .sin_port = htons(5303),
+    };
+    
+
+    // 1. 소켓 생성
+    serv_sock = socket(PF_INET, SOCK_STREAM, 0);
+    if (serv_sock < 0) return -1;
+
+    // 2. 바인드
+    if (bind(serv_sock, (struct sockaddr*)&serv_addr, sizeof serv_addr) < 0) return -2;
+
+    // 3. listen
+    if (listen(serv_sock, 5) < 0) return -3;
+    
+    clnt_addr_size = sizeof(clnt_addr);
+    clnt_sock = accept(serv_sock, (struct sockaddr*)&clnt_addr, &clnt_addr_size); //연결수락
+    printf("accept 성공\n");
+    return clnt_sock;
+}
+
+int tcp_server_worker(int fd, char *buf) 
+{
+    printf("worker start\n");
+    int i = 0;
+    char* arg[4] = { "", "", "" };
+    char send_buf[2048] = "";
+
+    // 1. 아규먼트 토큰 분리( 여기는 \n )
+    for (char* p = strtok(buf, "\n"); p; p = strtok(NULL, "\n")) {
+        arg[i++] = p;
+    }
+    printf("토큰 분리 성공\n");
+    // 2. 아규먼트 별 명령 실행
+    if (strcmp(arg[0], "list") == 0) {
+        printf("list 명령 실행\n");
+        char ls_result[2048] = "";
+        char flist[128][128] = { 0, };
+        FILE* fp = popen("ls -lt board", "r");
+        int idx = 0;
+
+        // 파일 목록 얻어오기
+        fgets(ls_result, sizeof ls_result, fp);
+        printf("목록 가져옴\n");
+        for (char* p = strtok(ls_result, "\n\r"); p; p = strtok(NULL, "\n\r")) {
+            strcpy(flist[idx++], p);
+        }
+        printf("목록 배열에 복사\n");
+        pclose(fp);
+        // 파일 내용 얻어오기
+        for (int j = 0; j < idx; j++) {
+            printf("목록 이용해서 파일 접속\n");
+            char fname[256], tmp[256], title[256];
+            sprintf(fname, "board/%s", flist[j]);
+            printf("목록 이용해서 파일 접속2\n");
+            fp = fopen(fname, "r");
+            printf("목록 이용해서 파일 접속3\n");
+            fscanf(fp, "%[^\n]", title);
+            printf("목록 이용해서 파일 접속4\n");
+            fclose(fp);
+            printf("목록 이용해서 파일 접속5\n");
+
+            sprintf(tmp, "%2d %s\n", j + 1, title);
+            printf("목록 이용해서 파일 접속6\n");
+            strcat(send_buf, tmp);
+            printf("목록 이용해서 파일 접속7\n");
+        }
+    }
+    else if (strcmp(arg[0], "write") == 0) {
+        //파일 개수 얻어오기
+        FILE* fp = popen("ls -l board | wc -l", "r");
+        int nfcnt;
+        char fcnt[32] = "", fname[128];
+        fgets(fcnt, sizeof fcnt, fp);
+        pclose(fp);
+        nfcnt = atoi(fcnt) + 1;
+
+        //파일 생성
+        sprintf(fname, "board/%d.txt", nfcnt);
+        fp = fopen(fname, "w");
+        fprintf(fp, "%s\n%s", arg[1], arg[2]);
+        fclose(fp);
+    }
+    else if (strcmp(arg[0], "show") == 0) {
+        //파일 이름 읽어오기
+        char tmp[2048], tmp2[2048];
+        FILE* fp;
+
+        sprintf(tmp, "board/%s.txt", arg[1]);
+        fp = fopen(tmp, "r");
+        fscanf(fp, "%[^\n]%*c", tmp);
+        fscanf(fp, "%[^\n]", tmp2);
+        fclose(fp);
+        sprintf(send_buf, "제목 : %s\n 내용 : %s\n", tmp, tmp2);
+    }
+    // 3. 전송
+    //return sendto(fd, send_buf, strlen(send_buf), 0, (struct sockaddr*)paddr, sizeof(*paddr));
+    printf("보내기 직전\n");
+    return write(fd, send_buf, strlen(send_buf));
+    printf("보내기\n");
+}
+
+int main(void) {
+    // 1. 서버 생성
+    //struct sockaddr_in client_addr;
+    int serv_sock = tcp_server_open(), addr_len, recv_len;
+    char buf[2048];
+
+    switch (serv_sock) {
+    case -1: printf("소켓 생성 실패\n"); return 1;
+    case -2: printf("바인드 실패\n"); return 1;
+    case -3: printf("listen 실패\n"); return 1;
+    }
+
+    while (1) {
+        // 2. 메세지 수신
+        //addr_len = sizeof client_addr;
+        //recv_len = recvfrom(serv_sock, buf, sizeof buf, 0, (struct sockaddr*)&client_addr, &addr_len);
+        recv_len = read(serv_sock, buf, sizeof buf);
+        if (recv_len < 0) continue;
+        buf[recv_len] = '\0';
+        printf(buf);
+
+        // 3. 명령 처리
+        tcp_server_worker(serv_sock,  buf);
+    }
+}
