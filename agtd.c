@@ -48,7 +48,7 @@ int stdby_socket_open(void) {
 
 int mmi_server_worker(int clnt_sock, char *buf) {
 	int i = 0;
-	char* arg[4] = { "", "", "" };
+	char arg[4] = { "", "", "" };
 	char send_buf[2048] = "";
 
 	int qid,len;
@@ -63,19 +63,23 @@ int mmi_server_worker(int clnt_sock, char *buf) {
 		long type;
 		char text[2048];
 	};
+	struct msgq_data send_data;
+	struct msgq_data recv_data;
 
+
+	printf("%s\n",arg[0]);
+	printf("%s\n", arg[1]);
 	if ((qid = msgget((key_t)0111, IPC_CREAT | 0666)) == -1) {
 		printf("메시지 큐 생성 실패\n");
 	}
 
-
-	
-
 	//아규먼트 별 명령 실행
-	if (strcmp(arg[0], "DIS-RESOURCE")) {
-		if (strcmp(arg[1], "MEMORY")) {
-			struct msgq_data send_data = { 1L, arg[1] };
-			struct msgq_data recv_data;
+	if (strcmp(arg[0], "DIS-RESOURCE") == 0) {
+		if (strcmp(arg[1], "MEMORY") == 0) {
+			printf("memory 실행\n");
+			send_data.type = 1;
+			sprintf(send_data.text, "%s", arg[1]);
+			printf("send 실행\n");
 			if (msgsnd(qid, &send_data, strlen(send_data.text), 0) == -1) {
 				printf("메시지 큐 전송 실패\n");
 			}

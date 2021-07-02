@@ -13,6 +13,7 @@ struct msgq_data {
     char text[BUFSIZE];
 };
 struct msgq_data recv_data;
+struct msgq_data send_data;
 
 main()
 {
@@ -26,10 +27,11 @@ main()
         perror("msgrcv failed");
         exit(1);
     }
-    if (msgctl(qid, IPC_RMID, 0) == -1) {
-        perror("msgctl failed");
-        exit(1);
-    }
+    //if (msgctl(qid, IPC_RMID, 0) == -1) {
+        //perror("msgctl failed");
+       // exit(1);
+    //}
+    printf("%s\n", recv_data.text);
  
     if (recv_data.text == "CPU") {
         char tmp[2048];
@@ -39,14 +41,21 @@ main()
         printf("%s", fcnt);
         
     }
-    if (recv_data.text == "MEMORY") {
+    else if (strcmp(recv_data.text,"MEMORY") == 0) {
         char tmp[2048];
         FILE* fp = popen("free | grep Mem | awk '{print $4/$3 * 100.0}'", "r");
-        char fcnt[32] = "";
+        char fcnt[40] = "";
         fgets(fcnt, sizeof fcnt, fp);
         printf("%s", fcnt);
+        send_data.type = 1;
+        sprintf(send_data.text, "%s", fcnt);
+        msgsnd(qid, &send_data, strlen(send_data.text), 0);
+        if (msgctl(qid, IPC_RMID, 0) == -1) {
+            perror("msgctl failed");
+            exit(1);
+        }
     }
-    if (recv_data.text == "DISK") {
+    else if (recv_data.text == "DISK") {
         char tmp[2048];
         FILE* fp = popen("df|tail -1|tr -s ' '|cut -d ' ' -f5", "r");
         char fcnt[32] = "";
