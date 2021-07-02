@@ -53,11 +53,11 @@ int mmi_server_worker(int clnt_sock, char *buf) {
 
 	int qid,len;
 	
-	// ¾Æ±Ô¸ÕÆ® ÅäÅ« ºĞ¸®
+	// ì•„ê·œë¨¼íŠ¸ í† í° ë¶„ë¦¬
 	for (char* p = strtok(buf, "\n"); p; p = strtok(NULL, "\n")) {
 		arg[i++] = p;
 	}
-	printf("ÅäÅ« ºĞ¸® ¼º°ø\n");
+	printf("í† í° ë¶„ë¦¬ ì„±ê³µ\n");
 
 	struct msgq_data {
 		long type;
@@ -65,61 +65,61 @@ int mmi_server_worker(int clnt_sock, char *buf) {
 	};
 
 	if ((qid = msgget((key_t)0111, IPC_CREAT | 0666)) == -1) {
-		printf("¸Ş½ÃÁö Å¥ »ı¼º ½ÇÆĞ\n");
+		printf("ë©”ì‹œì§€ í ìƒì„± ì‹¤íŒ¨\n");
 	}
 
 
 	
 
-	//¾Æ±Ô¸ÕÆ® º° ¸í·É ½ÇÇà
+	//ì•„ê·œë¨¼íŠ¸ ë³„ ëª…ë ¹ ì‹¤í–‰
 	if (strcmp(arg[0], "DIS-RESOURCE")) {
 		if (strcmp(arg[1], "MEMORY")) {
 			struct msgq_data send_data = { 1L, arg[1] };
 			struct msgq_data recv_data;
 			if (msgsnd(qid, &send_data, strlen(send_data.text), 0) == -1) {
-				printf("¸Ş½ÃÁö Å¥ Àü¼Û ½ÇÆĞ\n");
+				printf("ë©”ì‹œì§€ í ì „ì†¡ ì‹¤íŒ¨\n");
 			}
 			if ((len = msgrcv(qid, &recv_data, 100, 0, 0)) == -1)
 			{
-				printf("¸Ş½ÃÁö Å¥ ¼ö½Å ½ÇÆĞ\n");
+				printf("ë©”ì‹œì§€ í ìˆ˜ì‹  ì‹¤íŒ¨\n");
 			}
 			sprintf(send_buf, "%s", recv_data.text);
 			if (msgctl(qid, IPC_RMID, 0) == -1) {
-				printf("msgctl ½ÇÆĞ\n");
+				printf("msgctl ì‹¤íŒ¨\n");
 			}
 		}
 		else if (strcmp(arg[1], "DISK")) {
 			struct msgq_data send_data = { 1L, arg[1] };
 			struct msgq_data recv_data;
 			if (msgsnd(qid, &send_data, strlen(send_data.text), 0) == -1) {
-				printf("¸Ş½ÃÁö Å¥ Àü¼Û ½ÇÆĞ\n");
+				printf("ë©”ì‹œì§€ í ì „ì†¡ ì‹¤íŒ¨\n");
 			}
 			if ((len = msgrcv(qid, &recv_data, 100, 0, 0)) == -1)
 			{
-				printf("¸Ş½ÃÁö Å¥ ¼ö½Å ½ÇÆĞ\n");
+				printf("ë©”ì‹œì§€ í ìˆ˜ì‹  ì‹¤íŒ¨\n");
 			}
 			sprintf(send_buf, "%s", recv_data.text);
 			if (msgctl(qid, IPC_RMID, 0) == -1) {
-				printf("msgctl ½ÇÆĞ\n");
+				printf("msgctl ì‹¤íŒ¨\n");
 			}
 		}
 		else if (strcmp(arg[1], "CPU")) {
 			struct msgq_data send_data = { 1L, arg[1] };
 			struct msgq_data recv_data;
 			if (msgsnd(qid, &send_data, strlen(send_data.text), 0) == -1) {
-				printf("¸Ş½ÃÁö Å¥ Àü¼Û ½ÇÆĞ\n");
+				printf("ë©”ì‹œì§€ í ì „ì†¡ ì‹¤íŒ¨\n");
 			}
 			if ((len = msgrcv(qid, &recv_data, 100, 0, 0)) == -1)
 			{
-				printf("¸Ş½ÃÁö Å¥ ¼ö½Å ½ÇÆĞ\n");
+				printf("ë©”ì‹œì§€ í ìˆ˜ì‹  ì‹¤íŒ¨\n");
 			}
 			sprintf(send_buf, "%s", recv_data.text);
 			if (msgctl(qid, IPC_RMID, 0) == -1) {
-				printf("msgctl ½ÇÆĞ\n");
+				printf("msgctl ì‹¤íŒ¨\n");
 			}
 		}
 		else {
-			char msg[20] = "¸í·É¾î Àß¸ø ÀÔ·Â\n";
+			char msg[20] = "ëª…ë ¹ì–´ ì˜ëª» ì…ë ¥\n";
 			sprintf(send_buf, "%s", msg);
 		}
 
@@ -132,30 +132,30 @@ int mmi_server_worker(int clnt_sock, char *buf) {
 }
 
 int main(void) {
-	// ¼­¹ö ¿ÀÇÂ, accept¿¡ »ç¿ë ÇÒ º¯¼ö ¼±¾ğ, read¿¡ »ç¿ë ÇÒ º¯¼ö ¼±¾ğ
+	// ì„œë²„ ì˜¤í”ˆ, acceptì— ì‚¬ìš© í•  ë³€ìˆ˜ ì„ ì–¸, readì— ì‚¬ìš© í•  ë³€ìˆ˜ ì„ ì–¸
 	int mmi_client_socket;
 	struct sockaddr_in clnt_addr;
 	int clnt_addr_size;
-	int mmi_server_socket = mmi_socket_open(), recv_len; // ¼­¹ö ¿ÀÇÂ ÇÔ¼ö
+	int mmi_server_socket = mmi_socket_open(), recv_len; // ì„œë²„ ì˜¤í”ˆ í•¨ìˆ˜
 	char buf[2048];
 
 	switch (mmi_server_socket)
 	{
-	case -1: printf("¼ÒÄÏ »ı¼º ½ÇÆĞ\n"); return 1;
-	case -2: printf("¹ÙÀÎµå ½ÇÆĞ\n"); return 1;
-	case -3: printf("listen ½ÇÆĞ\n"); return 1;
+	case -1: printf("ì†Œì¼“ ìƒì„± ì‹¤íŒ¨\n"); return 1;
+	case -2: printf("ë°”ì¸ë“œ ì‹¤íŒ¨\n"); return 1;
+	case -3: printf("listen ì‹¤íŒ¨\n"); return 1;
 	}
 
 	while (1) {
 		clnt_addr_size = sizeof(clnt_addr);
-		mmi_client_socket = accept(mmi_server_socket, (struct sockaddr*)&clnt_addr_size, &clnt_addr_size);
-		printf("mmi ¿¬°á ¼º°ø\n");
+		mmi_client_socket = accept(mmi_server_socket, (struct sockaddr*)&clnt_addr, &clnt_addr_size);
+		printf("mmi ì—°ê²° ì„±ê³µ\n");
 		recv_len = read(mmi_client_socket, buf, sizeof buf);
 		if (recv_len < 0) continue;
 		buf[recv_len] = '\0';
 		printf(buf);
 
-		mmi_server_worker(mmi_client_socket, buf); //¹ŞÀº ¸í·É¾î ½ÇÇà ÄÚµå
+		mmi_server_worker(mmi_client_socket, buf); //ë°›ì€ ëª…ë ¹ì–´ ì‹¤í–‰ ì½”ë“œ
 
 
 	}
