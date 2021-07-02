@@ -7,12 +7,10 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-int serv_sock, clnt_sock;
-struct sockaddr_in clnt_addr;
-int clnt_addr_size;
 
 int tcp_server_open(void) {
     
+    int serv_sock;
     struct sockaddr_in serv_addr =
     {
      .sin_family = AF_INET,
@@ -83,6 +81,7 @@ int tcp_server_worker(int fd, char *buf)
         int nfcnt;
         char fcnt[32] = "", fname[128];
         fgets(fcnt, sizeof fcnt, fp);
+        printf(fcnt);
         pclose(fp);
         nfcnt = atoi(fcnt) + 1;
 
@@ -113,7 +112,9 @@ int tcp_server_worker(int fd, char *buf)
 
 int main(void) {
     // 1. 서버 생성
-    //struct sockaddr_in client_addr;
+    int clnt_sock;
+    struct sockaddr_in clnt_addr;
+    int clnt_addr_size;
     int serv_sock = tcp_server_open(), addr_len, recv_len;
     char buf[2048];
 
