@@ -34,7 +34,7 @@ main()
     if (recv_data.text == "CPU") {
         char tmp[2048];
         FILE* fp = popen("top -n 1 -b | awk '/^%Cpu/{print $2}'", "r");
-        char fcnt[32] "";
+        char fcnt[32] = "";
         fgets(fcnt, sizeof fcnt, fp);
         printf("%s", fcnt);
         
@@ -42,14 +42,14 @@ main()
     if (recv_data.text == "MEMORY") {
         char tmp[2048];
         FILE* fp = popen("free | grep Mem | awk '{print $4/$3 * 100.0}'", "r");
-        char fcnt[32] "";
+        char fcnt[32] = "";
         fgets(fcnt, sizeof fcnt, fp);
         printf("%s", fcnt);
     }
     if (recv_data.text == "DISK") {
         char tmp[2048];
         FILE* fp = popen("df|tail -1|tr -s ' '|cut -d ' ' -f5", "r");
-        char fcnt[32] "";
+        char fcnt[32] = "";
         fgets(fcnt, sizeof fcnt, fp);
         printf("%s", fcnt);
     }

@@ -7,7 +7,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/msg.h>
-#include <sts/ipc.h>
+#include <sys/ipc.h>
 
 // 192.168.1.128, 192.168.1.145
 
@@ -21,7 +21,7 @@ int mmi_socket_open(void) {
 	mmi_server_socket = socket(PF_INET, SOCK_STREAM, 0);
 	if (mmi_server_socket < 0) return -1;
 
-	if (bind(mmi_server_socket, (struct sockaddr*)&serv_addr), sizeof serv_addr) < 0) return -2;
+	if (bind(mmi_server_socket, (struct sockaddr*)&serv_addr, sizeof serv_addr) < 0) return -2;
 
 	if (listen(mmi_server_socket, 5) < 0) return -3;
 
@@ -38,7 +38,7 @@ int stdby_socket_open(void) {
 	stdby_server_socket = socket(PF_INET, SOCK_STREAM, 0);
 	if (stdby_server_socket < 0) return -1;
 
-	if (bind(stdby_server_socket, (struct sockaddr*)&serv_addr), sizeof serv_addr) < 0) return -2;
+	if (bind(stdby_server_socket, (struct sockaddr*)&serv_addr, sizeof serv_addr) < 0) return -2;
 
 	if (listen(stdby_server_socket, 5) < 0) return -3;
 
@@ -74,7 +74,7 @@ int mmi_server_worker(int clnt_sock, char *buf) {
 	//아규먼트 별 명령 실행
 	if (strcmp(arg[0], "DIS-RESOURCE")) {
 		if (strcmp(arg[1], "MEMORY")) {
-			struct msgq_data send_data = { 1, arg[1] };
+			struct msgq_data send_data = { 1L, arg[1] };
 			struct msgq_data recv_data;
 			if (msgsnd(qid, &send_data, strlen(send_data.text), 0) == -1) {
 				printf("메시지 큐 전송 실패\n");
@@ -83,13 +83,13 @@ int mmi_server_worker(int clnt_sock, char *buf) {
 			{
 				printf("메시지 큐 수신 실패\n");
 			}
-			send_buf = recv_data.text;
+			sprintf(send_buf, "%s", recv_data.text);
 			if (msgctl(qid, IPC_RMID, 0) == -1) {
-				printf(("msgctl 실패\n");
+				printf("msgctl 실패\n");
 			}
 		}
 		else if (strcmp(arg[1], "DISK")) {
-			struct msgq_data send_data = { 1, arg[1] };
+			struct msgq_data send_data = { 1L, arg[1] };
 			struct msgq_data recv_data;
 			if (msgsnd(qid, &send_data, strlen(send_data.text), 0) == -1) {
 				printf("메시지 큐 전송 실패\n");
@@ -98,13 +98,13 @@ int mmi_server_worker(int clnt_sock, char *buf) {
 			{
 				printf("메시지 큐 수신 실패\n");
 			}
-			send_buf = recv_data.text;
+			sprintf(send_buf, "%s", recv_data.text);
 			if (msgctl(qid, IPC_RMID, 0) == -1) {
-				printf(("msgctl 실패\n");
+				printf("msgctl 실패\n");
 			}
 		}
 		else if (strcmp(arg[1], "CPU")) {
-			struct msgq_data send_data = { 1, arg[1] };
+			struct msgq_data send_data = { 1L, arg[1] };
 			struct msgq_data recv_data;
 			if (msgsnd(qid, &send_data, strlen(send_data.text), 0) == -1) {
 				printf("메시지 큐 전송 실패\n");
@@ -113,13 +113,14 @@ int mmi_server_worker(int clnt_sock, char *buf) {
 			{
 				printf("메시지 큐 수신 실패\n");
 			}
-			send_buf = recv_data.text;
+			sprintf(send_buf, "%s", recv_data.text);
 			if (msgctl(qid, IPC_RMID, 0) == -1) {
-				printf(("msgctl 실패\n");
+				printf("msgctl 실패\n");
 			}
 		}
 		else {
-			send_buf = "잘못된 명령어입니다.\n";
+			char msg[20] = "명령어 잘못 입력\n";
+			sprintf(send_buf, "%s", msg);
 		}
 
 	}
