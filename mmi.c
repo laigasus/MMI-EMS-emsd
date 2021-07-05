@@ -10,7 +10,7 @@
 
 void send_cmd(const char *cmd) {
   int conn_repeat = 0;
-  char *ip_list[] = {"192.168.209.170", "192.168.227.92"};
+  char *ip_list[] = {"192.168.220.108", "192.168.227.92"};
 
   struct sockaddr_in addr = {.sin_family = AF_INET,
                              .sin_addr.s_addr = inet_addr(ip_list[conn_repeat]),

@@ -1,5 +1,6 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -9,6 +10,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#define CMD_FUNC 3
 // 192.168.1.128, 192.168.1.145
 
 typedef struct msgq_data {
@@ -41,9 +43,10 @@ int socket_open(char* target) {
 
 int mmi_server_worker(int clnt_sock, char* buf) {
   int i = 0;
+  bool flag = false;
   char* arg[3] = {"", "", ""};
   char send_buf[2048] = "";
-
+  char* cmd_list[CMD_FUNC] = {"MEMORY", "DISK", "CPU"};
   int qid, len;
 
   // 아규먼트 토큰 분리
@@ -63,65 +66,37 @@ int mmi_server_worker(int clnt_sock, char* buf) {
   }
 
   //아규먼트 별 명령 실행
-  if (strcmp(arg[0], "DIS-RESOURCE") == 0) {
-    if (strcmp(arg[1], "MEMORY") == 0) {
-        printf("memory 실행\n");
-        sprintf(send_data.text, "%s", arg[1]);
-        printf("%s\n",send_data.text);
-        printf("send 실행\n");
-        if (msgsnd(qid, &send_data, strlen(send_data.text), 0) == -1) {
-            perror("메시지 큐 전송 실패\n");
-        }
-        printf("rcv 실행\n");
-        if ((len = msgrcv(qid, &recv_data, 100, 0, 0)) == -1) {
-            perror("메시지 큐 수신 실패\n");
-        }
-        sprintf(send_buf, "%s", recv_data.text);
-        //if (msgctl(qid, IPC_RMID, 0) == -1) {
-            //perror("msgctl 실패\n");
-        //}
-    }
-    else if (strcmp(arg[1], "DISK") == 0) {
-        printf("disk 실행\n");
-        sprintf(send_data.text, "%s", arg[1]);
-        printf("%s\n", send_data.text);
-        printf("send 실행\n");
-        if (msgsnd(qid, &send_data, strlen(send_data.text), 0) == -1) {
-            perror("메시지 큐 전송 실패\n");
-        }
-        printf("rcv 실행\n");
-        if ((len = msgrcv(qid, &recv_data, 100, 0, 0)) == -1) {
-            perror("메시지 큐 수신 실패\n");
-        }
-        sprintf(send_buf, "%s", recv_data.text);
-        //if (msgctl(qid, IPC_RMID, 0) == -1) {
-            //perror("msgctl 실패\n");
-        //}
-    }
-    else if (strcmp(arg[1], "CPU") == 0) {
-        printf("cpu 실행\n");
-        sprintf(send_data.text, "%s", arg[1]);
-        printf("%s\n", send_data.text);
-        if (msgsnd(qid, &send_data, strlen(send_data.text), 0) == -1) {
-            perror("메시지 큐 전송 실패\n");
-        }
-        printf("rcv 실행\n");
-        if ((len = msgrcv(qid, &recv_data, 100, 0, 0)) == -1) {
-            perror("메시지 큐 수신 실패\n");
-        }
-        sprintf(send_buf, "%s", recv_data.text);
-        //if (msgctl(qid, IPC_RMID, 0) == -1) {
-            //perror("msgctl 실패\n");
-        //}
-    }
-    else {
-        char msg[30] = "명령어 잘못 입력\n";
-        sprintf(send_buf, "%s", msg);
+  if (!strcmp(arg[0], "DIS-RESOURCE")) {
+    i = 0;
+    do {
+      if (!strcmp(arg[1], cmd_list[i])) {
+        flag = true;
+        break;
+      }
+      i++;
+    } while (i < CMD_FUNC);
+    if (flag) {
+      printf("memory 실행\n");
+      sprintf(send_data.text, "%s", arg[1]);
+      printf("%s\n", send_data.text);
+      printf("send 실행\n");
+      if (msgsnd(qid, &send_data, strlen(send_data.text), 0) == -1) {
+        perror("메시지 큐 전송 실패\n");
+      }
+      printf("rcv 실행\n");
+      if ((len = msgrcv(qid, &recv_data, 100, 0, 0)) == -1) {
+        perror("메시지 큐 수신 실패\n");
+      }
+      sprintf(send_buf, "%s", recv_data.text);
+      // if (msgctl(qid, IPC_RMID, 0) == -1) {
+      // perror("msgctl 실패\n");
+      //}
+    } else {
+      char msg[30] = "명령어 잘못 입력\n";
+      sprintf(send_buf, "%s", msg);
     }
 
-  } 
-  else if (strcmp(arg[0], "DIS-SW-STS")) {
-
+  } else if (strcmp(arg[0], "DIS-SW-STS")) {
   }
   write(clnt_sock, send_buf, strlen(send_buf));
   close(clnt_sock);
