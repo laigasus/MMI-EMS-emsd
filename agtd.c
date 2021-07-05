@@ -39,6 +39,7 @@ int socket_open(char* target) {
   return sock;
 }
 
+<<<<<<< HEAD
 int mmi_server_worker(int clnt_sock, char* buf) {
   int i = 0;
   char* arg[3] = {"", "", ""};
@@ -109,6 +110,92 @@ int mmi_server_worker(int clnt_sock, char* buf) {
   }
   write(clnt_sock, send_buf, strlen(send_buf));
   close(clnt_sock);
+=======
+
+int mmi_server_worker(int clnt_sock, char *buf) {
+	int i = 0;
+	char* arg[4] = { "", "", "" };
+	char send_buf[2048] = "";
+
+	int qid,len;
+	
+	// 아규먼트 토큰 분리
+	for (char* p = strtok(buf, "\n"); p; p = strtok(NULL, "\n")) {
+		arg[i++] = p;
+	}
+	printf("토큰 분리 성공\n");
+
+	struct msgq_data {
+		long type;
+		char text[2048];
+	};
+
+	if ((qid = msgget((key_t)0111, IPC_CREAT | 0666)) == -1) {
+		printf("메시지 큐 생성 실패\n");
+	}
+
+
+	
+
+	//아규먼트 별 명령 실행
+	if (strcmp(arg[0], "DIS-RESOURCE")) {
+		if (strcmp(arg[1], "MEMORY")) {
+			struct msgq_data send_data = { 1L, arg[1] };
+			struct msgq_data recv_data;
+			if (msgsnd(qid, &send_data, strlen(send_data.text), 0) == -1) {
+				printf("메시지 큐 전송 실패\n");
+			}
+			if ((len = msgrcv(qid, &recv_data, 100, 0, 0)) == -1)
+			{
+				printf("메시지 큐 수신 실패\n");
+			}
+			sprintf(send_buf, "%s", recv_data.text);
+			if (msgctl(qid, IPC_RMID, 0) == -1) {
+				printf("msgctl 실패\n");
+			}
+		}
+		else if (strcmp(arg[1], "DISK")) {
+			struct msgq_data send_data = { 1L, arg[1] };
+			struct msgq_data recv_data;
+			if (msgsnd(qid, &send_data, strlen(send_data.text), 0) == -1) {
+				printf("메시지 큐 전송 실패\n");
+			}
+			if ((len = msgrcv(qid, &recv_data, 100, 0, 0)) == -1)
+			{
+				printf("메시지 큐 수신 실패\n");
+			}
+			sprintf(send_buf, "%s", recv_data.text);
+			if (msgctl(qid, IPC_RMID, 0) == -1) {
+				printf("msgctl 실패\n");
+			}
+		}
+		else if (strcmp(arg[1], "CPU")) {
+			struct msgq_data send_data = { 1L, arg[1] };
+			struct msgq_data recv_data;
+			if (msgsnd(qid, &send_data, strlen(send_data.text), 0) == -1) {
+				printf("메시지 큐 전송 실패\n");
+			}
+			if ((len = msgrcv(qid, &recv_data, 100, 0, 0)) == -1)
+			{
+				printf("메시지 큐 수신 실패\n");
+			}
+			sprintf(send_buf, "%s", recv_data.text);
+			if (msgctl(qid, IPC_RMID, 0) == -1) {
+				printf("msgctl 실패\n");
+			}
+		}
+		else {
+			char msg[20] = "명령어 잘못 입력\n";
+			sprintf(send_buf, "%s", msg);
+		}
+
+	}
+	else if (strcmp(arg[0], "DIS-SW-STS")) {
+
+	}
+	write(clnt_sock, send_buf, strlen(send_buf));
+	close(clnt_sock);
+>>>>>>> parent of e9c3ce3 (agtd rstat 수정)
 }
 
 void msg_queue() {}
