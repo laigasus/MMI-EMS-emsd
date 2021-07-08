@@ -5,7 +5,7 @@
 #include <sys/msg.h>
 #include <sys/types.h>
 
-#define BUFSIZE 40
+#define BUFSIZE 50
 #define QKEY (key_t)0111
 
 typedef struct msgq_data {
@@ -42,7 +42,6 @@ void main() {
       fp = popen("df|tail -1|tr -s ' '|cut -d ' ' -f5", "r");
     }
     fgets(fcnt, sizeof fcnt, fp);
-    printf("%s", fcnt);
     send_data.type = 1;
     sprintf(send_data.text, "Usage>%s", fcnt);
     msgsnd(qid, &send_data, strlen(send_data.text), 0);
