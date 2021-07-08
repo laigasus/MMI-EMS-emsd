@@ -24,9 +24,7 @@ int socket_open(char* target) {
   if (!strcmp(target, "mmi")) {
     target_port = 9000;
   }
-  if (!strcmp(target, "stdby")) {
-    target_port = 9001;
-  }
+
   struct sockaddr_in serv_addr = {.sin_family = AF_INET,
                                   .sin_addr.s_addr = htonl(INADDR_ANY),
                                   .sin_port = htons(target_port)};
@@ -43,32 +41,20 @@ int socket_open(char* target) {
 
 int mmi_server_worker(int clnt_sock, char* buf) {
   int i = 0;
-  //int stdby_sock;
   bool flag = false;
   char* arg[3] = {"", "", ""};
   char send_buf[2048] = "";
   char* cmd_list[CMD_FUNC] = {"MEMORY", "DISK", "CPU"};
-  int qid1, qid2,  len;
-  char text[50] = "";
+  int rstat_queue, prm_queue;
 
   // 아규먼트 토큰 분리
   for (char* p = strtok(buf, "\n"); p; p = strtok(NULL, "\n")) {
     arg[i++] = p;
   }
-  printf("토큰 분리 성공\n");
 
   Message send_data = {1L, *arg[1]};
   Message recv_data;
   memset(&recv_data, 0x00, sizeof(recv_data));
-
-  printf("%s\n", arg[0]);
-  printf("%s\n", arg[1]);
-  if ((qid1 = msgget((key_t)0111, IPC_CREAT | 0666)) == -1) {
-    perror("메시지 큐1 생성 실패\n");
-  }
-  if ((qid2 = msgget((key_t)0112, IPC_CREAT | 0666)) == -1) {
-      perror("메시지 큐2 생성 실패\n");
-  }
 
   //아규먼트 별 명령 실행
   if (!strcmp(arg[0], "DIS-RESOURCE")) {
@@ -81,59 +67,37 @@ int mmi_server_worker(int clnt_sock, char* buf) {
       i++;
     } while (i < CMD_FUNC);
     if (flag) {
-      printf("memory 실행\n");
+      if ((rstat_queue = msgget((key_t)0111, IPC_CREAT | 0666)) == -1) {
+        perror("메시지 큐 생성 실패\n");
+      }
       sprintf(send_data.text, "%s", arg[1]);
-      printf("send 실행\n");
-      if (msgsnd(qid1, &send_data, strlen(send_data.text), 0) == -1) {
+      if (msgsnd(rstat_queue, &send_data, strlen(send_data.text), 0) == -1) {
         perror("메시지 큐 전송 실패\n");
       }
-      printf("rcv 실행\n");
-      if ((len = msgrcv(qid1, &recv_data, 100, 0, 0)) == -1) {
+      if ((msgrcv(rstat_queue, &recv_data, 100, 0, 0)) == -1) {
         perror("메시지 큐 수신 실패\n");
       }
       sprintf(send_buf, "%s", recv_data.text);
     } else {
-      char msg[30] = "명령어 잘못 입력\n";
-      sprintf(send_buf, "%s", msg);
+      sprintf(send_buf, "%s", "명령어 잘못 입력\n");
     }
 
-  } 
-  else if (!strcmp(arg[0], "DIS-SW-STS")) {
-      if (!strcmp(arg[1], "ACT")) {
-          printf("act 실행\n");
-          sprintf(send_data.text, "%s", arg[1]);
-          printf("%s\n", send_data.text);
-          printf("send 실행\n");
-          if (msgsnd(qid2, &send_data, strlen(send_data.text), 0) == -1) {
-              perror("메시지 큐 전송 실패\n");
-          }
-          printf("rcv 실행\n");
-          if ((len = msgrcv(qid2, &recv_data, 100, 0, 0)) == -1) {
-              perror("메시지 큐 수신 실패\n");
-          }
-          printf("%s\n", recv_data.text);
-          if (strstr(recv_data.text, "rstat")) {
-              strcpy(text, "rstat is runing");
-              sprintf(send_buf, "%s", text);
-          }
-          else {
-              strcpy(text, "rstat is killed");
-              sprintf(send_buf, "%s", text);
-          }
-      }
-      else if (!strcmp(arg[1], "SBY")) {
-          //socket=socket_open("stdby")
-      }
-      else {
-          char msg[30] = "명령어 잘못 입력\n";
-          sprintf(send_buf, "%s", msg);
-      }
+  } else if (!strcmp(arg[0], "DIS-SW-STS")) {
+    if ((prm_queue = msgget((key_t)1112, IPC_CREAT | 0666)) == -1) {
+      perror("메시지 큐 생성 실패\n");
+    }
+    sprintf(send_data.text, "%s", arg[1]);
+    if (msgsnd(prm_queue, &send_data, strlen(send_data.text), 0) == -1) {
+      perror("메시지 큐 전송 실패\n");
+    }
+    if (msgrcv(prm_queue, &recv_data, 100, 0, 0) == -1) {
+      perror("메시지 큐 수신 실패\n");
+    }
+    sprintf(send_buf, "%s", recv_data.text);
   }
   write(clnt_sock, send_buf, strlen(send_buf));
   close(clnt_sock);
 }
-
-void msg_queue() {}
 
 void main() {
   // 서버 오픈, accept에 사용 할 변수 선언, read에 사용 할 변수 선언
