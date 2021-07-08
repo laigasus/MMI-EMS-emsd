@@ -10,7 +10,7 @@
 
 void send_cmd(const char *cmd) {
   int conn_repeat = 0;
-  char *ip_list[] = {"192.168.220.108", "192.168.227.92"};
+  char *ip_list[] = {"192.168.79.141"};
 
   struct sockaddr_in addr = {.sin_family = AF_INET,
                              .sin_addr.s_addr = inet_addr(ip_list[conn_repeat]),
@@ -40,8 +40,7 @@ void send_cmd(const char *cmd) {
 
 void main(int argc, char *argv[]) {
   char cmd[2048] = "";
-  int i;
-  for (i = 1; i < argc; i++) {
+  for (int i = 1; i < argc; i++) {
     strcat(cmd, argv[i]);
     strcat(cmd, "\n");
   }
