@@ -14,12 +14,13 @@ typedef struct msgq_data {
 } Message;
 
 void main() {
-  int qid, len;
+  int qid;
   char tmp[2048];
   char fcnt[BUFSIZE] = "";
   FILE* fp;
 
-  printf("msgq 생성\n");
+  printf("rstat is running\n");
+
   if ((qid = msgget(QKEY, IPC_CREAT | 0666)) == -1) {
     perror("msgget failed");
     exit(1);
@@ -28,13 +29,10 @@ void main() {
     Message recv_data, send_data;
     memset(&recv_data, 0x00, sizeof(recv_data));
 
-    if ((len = msgrcv(qid, &recv_data, BUFSIZE, 0, 0)) == -1) {
+    if ((msgrcv(qid, &recv_data, BUFSIZE, 0, 0)) == -1) {
       perror("msgrcv failed");
       exit(1);
     }
-
-    printf("%s = 받은 문자값\n", recv_data.text);
-    printf("%s\n", recv_data.text);
 
     if (strcmp(recv_data.text, "CPU") == 0) {
       fp = popen("top -n 1 -b | awk '/^%Cpu/{print $2}'", "r");
@@ -46,7 +44,7 @@ void main() {
     fgets(fcnt, sizeof fcnt, fp);
     printf("%s", fcnt);
     send_data.type = 1;
-    sprintf(send_data.text, "%s", fcnt);
+    sprintf(send_data.text, "Usage>%s", fcnt);
     msgsnd(qid, &send_data, strlen(send_data.text), 0);
   }
 }
