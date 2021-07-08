@@ -119,6 +119,8 @@ void main() {
       exit(-3);
   }
 
+  printf("agtd is running");
+  
   while (1) {
     clnt_addr_size = sizeof(clnt_addr);
     mmi_client_socket = accept(mmi_server_socket, (struct sockaddr*)&clnt_addr,
