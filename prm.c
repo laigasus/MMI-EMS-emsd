@@ -11,7 +11,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#define BUFSIZE 40
+#define BUFSIZE 50
 #define QKEY (key_t)1112
 
 typedef struct msgq_data {
@@ -94,11 +94,3 @@ void main() {
     printf("메세지 전송>>%s", send_data.text);
   }
 }
-
-// agtd 두개의 rstat은 동일한 이름과 역할을 수행한다.
-// 두개의 rstat을 구분해서 파악하려면 프로세스 이름이 아닌 pid로 구분을 한다
-// rstat 프로세스 상태를 확인하려면 getpid()를 사용한다.
-// 사전에 rstat에서 getpid()로 실행하여 메세지큐로 prm에 전달되어 있어야 한다
-// rstat와 prm은 독립적으로 실행시키는 것이 아닌 agtd가 활성화 되었을때
-// 가동한다(자원 낭비 방지) popen으로 awk를 사용하여 결과 fcnt출력값이 없으면
-// killed, 있으면 running을 agtd에게 전달한다.
